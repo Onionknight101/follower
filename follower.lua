@@ -110,7 +110,6 @@ ashita.register_event('command', function(cmd, nType)
 	elseif(args[1]=='tar_set') then --automated command
 		--automaded command. sets target who the character follows
 		if(#args~=2) then print('followers requires 1 argument in the tar_set command.') return true end
-		print('following '..args[2])
 		target_name=args[2]
 		if(target_name==-1) then
 			--stop following target
@@ -118,6 +117,7 @@ ashita.register_event('command', function(cmd, nType)
 		else
 			--start following target
 			start_timer()
+			print('following '..args[2])
 		end
 	end
     return true;
@@ -146,7 +146,6 @@ local function camera_to_third()
 	if(is_between(get_focal_distance(player_position.x,player_position.z),min_focal_distance,100)) then
 		AshitaCore:GetChatManager():QueueCommand('/sendkey NUMPAD5 down',-1)
 		AshitaCore:GetChatManager():QueueCommand('/sendkey NUMPAD5 up',-1)
-		CAMERA_WAIT_UNTIL = os.clock()+CAMERA_WAIT_STEP
 	end
 end
 
@@ -156,7 +155,6 @@ local function camera_to_first()
 	if(get_focal_distance(player_position.x,player_position.z)<min_focal_distance) then
 		AshitaCore:GetChatManager():QueueCommand('/sendkey NUMPAD5 down',-1)
 		AshitaCore:GetChatManager():QueueCommand('/sendkey NUMPAD5 up',-1)
-		CAMERA_WAIT_UNTIL = os.clock()+CAMERA_WAIT_STEP
 	end
 end
 
@@ -217,7 +215,7 @@ function move_follow()
 	if(target_name and  target_name~= '') then
 		follow_distance = distance(player_position.x,player_position.z,target_position.x,target_position.z)
 		--if distance is higher than minimum then move
-		if(follow_distance>max_follow_distance and follow_distance<min_follow_distance) then
+		if(follow_distance>max_follow_distance or follow_distance<min_follow_distance) then
 			local player = GetEntity(AshitaCore:GetDataManager():GetParty():GetMemberTargetIndex(0));
 			local angle = (math.atan2((target_position.z - player_position.z), (target_position.x - player_position.x)) * 180 / math.pi) * -1.0;
 			local radian = math.degree2rad(angle) -- + 180);
