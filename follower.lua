@@ -2,13 +2,14 @@ _addon.name = 'follower'
 
 _addon.author = 'Onionknight'
 
-_addon.version = '0.0.0.1'
+_addon.version = '1.0.0.0'
 
 require('common')
-require('packets/packets_light')
 
-local player = GetEntity(AshitaCore:GetDataManager():GetParty():GetMemberTargetIndex(0));
+local player_index = AshitaCore:GetDataManager():GetParty():GetMemberTargetIndex(0)
+local player = GetEntity(player_index)
 local player_name = AshitaCore:GetDataManager():GetParty():GetMemberName(0)
+
 
 local player_position = {
 	['x']=player['Movement']['LocalPosition']['X'],
@@ -38,21 +39,6 @@ if (pointerToCameraPointer == 0) then error('Failed to locate critical signature
 pointerToCamera = ashita.memory.read_uint32(pointerToCameraPointer + 0x10);
 if (pointerToCamera == 0) then error('Failed to locate critical signature #3!'); end
 local rootCameraAddress = ashita.memory.read_uint32(pointerToCamera);
-
-ashita.register_event('outgoing_packet', function(id, size, data, packet_modified, blocked)
-	
-	--need 0x015
-	if(id==0x015) then
-		packet = PACKETS:parse_outgoing(data)
-		if(player_position.x~=packet['X'] or player_position.y~=packet['Y'] or player_position.z~=packet['Z']) then
-			player_position.x = packet['X']
-			player_position.y = packet['Y']
-			player_position.z = packet['Z']
-			report_position()
-		end
-	end
-    return false;
-end);
 
 --remove text from the front if the text starts with given testtext
 local function trim_start(input_,start_)
@@ -239,7 +225,36 @@ function move_follow()
 	end
 end
 
+local function get_position(index_)
+	return AshitaCore:GetDataManager():GetEntity():GetLocalX(index_),
+	AshitaCore:GetDataManager():GetEntity():GetLocalY(index_),
+	AshitaCore:GetDataManager():GetEntity():GetLocalZ(index_)
+end
+
+local function check_self_pos()
+	local pX,pY,pZ = get_position(player_index)
+	local oldX=player_position.x
+	local oldY=player_position.y
+	local oldZ=player_position.z
+	player_position.x = pX
+	player_position.y = pY
+	player_position.z = pZ
+	
+	if(oldX~=pX or oldY~=pY or oldZ~=pZ) then
+		player_position.x = pX
+		player_position.y = pY
+		player_position.z = pZ
+		report_position()
+	end
+end
+
 --create timers
 ashita.timer.stop('follow_timer')
 ashita.timer.adjust_timer('follow_timer',0.1,-1,function()
 	move_follow() end)
+	
+	ashita.timer.stop('check_pos')
+	ashita.timer.adjust_timer('check_pos',1,-1,function()
+		check_self_pos()
+	end)
+	ashita.timer.start_timer('check_pos')
